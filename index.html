@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual Historical Corpus Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #1e3c72;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #666;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .arabic-input {
+            font-family: 'Amiri', 'Traditional Arabic', serif;
+            font-size: 1.2rem;
+            text-align: right;
+            direction: rtl;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.3);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        .confidence-score {
+            margin-left: auto;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .confidence-high {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .confidence-medium {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .confidence-low {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .variant-item {
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #2a5298;
+        }
+
+        .variant-text {
+            font-family: 'Amiri', 'Traditional Arabic', serif;
+            font-size: 1.1rem;
+            direction: rtl;
+            text-align: right;
+            margin-bottom: 0.5rem;
+            color: #1e3c72;
+        }
+
+        .variant-source {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .variant-meaning {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .etymology-connection {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: #f0f4f8;
+            border-radius: 6px;
+        }
+
+        .language-tag {
+            background: #2a5298;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2a5298;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .methodology-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .methodology-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .method-item {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .method-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Multilingual Historical Corpus Analyzer</h1>
+        <p>AI-Assisted Textual Criticism with Cross-Linguistic Validation</p>
+    </div>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="input-group">
+                <label for="arabicText">Arabic Text (Quranic or Classical)</label>
+                <textarea id="arabicText" class="arabic-input" rows="3" placeholder="أدخل النص العربي هنا...">إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ</textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="input-group">
+                    <label for="surahNumber">Surah Number</label>
+                    <input type="text" id="surahNumber" placeholder="108" value="108">
+                </div>
+                
+                <div class="input-group">
+                    <label for="verseNumber">Verse Number</label>
+                    <input type="text" id="verseNumber" placeholder="1" value="1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="hermeneuticalLens">Hermeneutical Approach</label>
+                    <select id="hermeneuticalLens">
+                        <option value="modernist">Modernist</option>
+                        <option value="feminist">Feminist</option>
+                        <option value="literalist">Literalist</option>
+                        <option value="mystical">Mystical</option>
+                        <option value="historical-critical">Historical-Critical</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="analyzeText()">🔍 Analyze Text</button>
+        </div>
+
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing text across multilingual corpus...</p>
+        </div>
+
+        <div id="results" class="results-grid"></div>
+
+        <div class="methodology-section">
+            <h2 style="color: #1e3c72; margin-bottom: 1rem;">📚 Methodology Overview</h2>
+            <div class="methodology-grid">
+                <div class="method-item">
+                    <div class="method-icon">📖</div>
+                    <h3>Rasm Analysis</h3>
+                    <p>Letter-by-letter examination of undotted manuscript forms</p>
+                </div>
+                <div class="method-item">
+                    <div class="method-icon">🌍</div>
+                    <h3>Cross-Linguistic</h3>
+                    <p>Etymology validation across Syriac, Ge'ez, Hebrew, Aramaic</p>
+                </div>
+                <div class="method-item">
+                    <div class="method-icon">📜</div>
+                    <h3>Qira'at Integration</h3>
+                    <p>Systematic checking against canonical and non-canonical readings</p>
+                </div>
+                <div class="method-item">
+                    <div class="method-icon">🔍</div>
+                    <h3>Historical Validation</h3>
+                    <p>Pre-Islamic poetry and early manuscript attestation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock databases - in real implementation, these would connect to APIs
+        const mockDictionaries = {
+            'lisan_al_arab': {
+                'كوثر': {
+                    root: 'ك-ث-ر',
+                    meaning: 'abundance, multitude',
+                    pattern: 'فَوْعَل',
+                    attestations: ['pre-Islamic poetry', 'Quranic usage']
+                },
+                'اعطى': {
+                    root: 'ع-ط-ي',
+                    meaning: 'to give, bestow',
+                    pattern: 'أَفْعَل',
+                    attestations: ['Classical Arabic', 'Quranic usage']
+                }
+            }
+        };
+
+        const mockQiraatVariants = {
+            '108:1': [
+                {
+                    text: 'إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ',
+                    reading: 'Hafs',
+                    source: 'Canonical',
+                    confidence: 1.0
+                }
+            ],
+            '1:4': [
+                {
+                    text: 'مَالِكِ يَوْمِ الدِّينِ',
+                    reading: 'Hafs',
+                    source: 'Canonical',
+                    meaning: 'Owner of the Day of Judgment',
+                    confidence: 1.0
+                },
+                {
+                    text: 'مَلِكِ يَوْمِ الدِّينِ',
+                    reading: 'Various canonical readers',
+                    source: 'Canonical',
+                    meaning: 'King of the Day of Judgment',
+                    confidence: 1.0
+                }
+            ]
+        };
+
+        const mockEtymologies = {
+            'كوثر': [
+                {
+                    language: 'Arabic',
+                    root: 'ك-ث-ر',
+                    meaning: 'to be abundant',
+                    confidence: 0.95
+                },
+                {
+                    language: 'Syriac',
+                    root: 'k-th-r',
+                    meaning: 'to remain, last (Luxenberg theory)',
+                    confidence: 0.3,
+                    note: 'Controversial interpretation'
+                }
+            ],
+            'نحر': [
+                {
+                    language: 'Arabic',
+                    root: 'ن-ح-ر',
+                    meaning: 'to slaughter at throat',
+                    confidence: 0.95
+                },
+                {
+                    language: 'Hebrew',
+                    root: 'נ-ח-ר',
+                    meaning: 'to snore (different meaning)',
+                    confidence: 0.2
+                }
+            ]
+        };
+
+        async function analyzeText() {
+            const arabicText = document.getElementById('arabicText').value;
+            const surahNumber = document.getElementById('surahNumber').value;
+            const verseNumber = document.getElementById('verseNumber').value;
+            const hermeneuticalLens = document.getElementById('hermeneuticalLens').value;
+
+            if (!arabicText.trim()) {
+                alert('Please enter Arabic text to analyze');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Perform analysis
+            const results = await performAnalysis(arabicText, surahNumber, verseNumber, hermeneuticalLens);
+            
+            // Hide loading and show results
+            document.getElementById('loadingIndicator').style.display = 'none';
+            displayResults(results);
+        }
+
+        async function performAnalysis(text, surah, verse, lens) {
+            const words = text.split(/\s+/).filter(word => word.length > 0);
+            const reference = `${surah}:${verse}`;
+            
+            return {
+                rasmAnalysis: performRasmAnalysis(words),
+                qiraatVariants: getQiraatVariants(reference),
+                etymologyAnalysis: performEtymologyAnalysis(words),
+                hermeneuticalAlignment: calculateHermeneuticalAlignment(words, lens),
+                confidenceScores: calculateConfidenceScores(words)
+            };
+        }
+
+        function performRasmAnalysis(words) {
+            return words.map(word => {
+                const cleanWord = word.replace(/[^\u0600-\u06FF]/g, ''); // Remove diacritics
+                const potentialVariants = generatePotentialVariants(cleanWord);
+                
+                return {
+                    word: word,
+                    undottedForm: cleanWord,
+                    potentialVariants: potentialVariants,
+                    confidence: potentialVariants.length === 0 ? 1.0 : 0.8
+                };
+            });
+        }
+
+        function generatePotentialVariants(word) {
+            const variants = [];
+            const confusableLetters = {
+                'ب': ['ت', 'ث', 'ن', 'ي'],
+                'ت': ['ب', 'ث', 'ن', 'ي'],
+                'ث': ['ب', 'ت', 'ن', 'ي'],
+                'ن': ['ب', 'ت', 'ث', 'ي'],
+                'ي': ['ب', 'ت', 'ث', 'ن'],
+                'ج': ['ح', 'خ'],
+                'ح': ['ج', 'خ'],
+                'خ': ['ج', 'ح'],
+                'د': ['ذ'],
+                'ذ': ['د'],
+                'ر': ['ز'],
+                'ز': ['ر'],
+                'س': ['ش'],
+                'ش': ['س'],
+                'ص': ['ض'],
+                'ض': ['ص'],
+                'ط': ['ظ'],
+                'ظ': ['ط'],
+                'ع': ['غ'],
+                'غ': ['ع'],
+                'ف': ['ق'],
+                'ق': ['ف']
+            };
+
+            // Only generate a few realistic variants to avoid overwhelming
+            if (word.includes('ن') && word.includes('ح') && word.includes('ر')) {
+                if (word.includes('انحر')) {
+                    variants.push({
+                        text: word.replace('انحر', 'ابحر'),
+                        type: 'ن→ب confusion',
+                        meaning: 'sail/navigate (semantically implausible)',
+                        confidence: 0.1
+                    });
+                }
+            }
+
+            return variants;
+        }
+
+        function getQiraatVariants(reference) {
+            return mockQiraatVariants[reference] || [];
+        }
+
+        function performEtymologyAnalysis(words) {
+            const analysis = [];
+            
+            words.forEach(word => {
+                const cleanWord = word.replace(/[^\u0600-\u06FF]/g, '');
+                const rootMatches = findRootMatches(cleanWord);
+                
+                if (rootMatches.length > 0) {
+                    analysis.push({
+                        word: word,
+                        etymologies: rootMatches
+                    });
+                }
+            });
+
+            return analysis;
+        }
+
+        function findRootMatches(word) {
+            const matches = [];
+            
+            // Simple pattern matching for demo
+            if (word.includes('كوثر')) {
+                matches.push(...(mockEtymologies['كوثر'] || []));
+            }
+            if (word.includes('نحر')) {
+                matches.push(...(mockEtymologies['نحر'] || []));
+            }
+            
+            return matches;
+        }
+
+        function calculateHermeneuticalAlignment(words, lens) {
+            const alignmentScores = {
+                'modernist': 0.8,
+                'feminist': 0.6,
+                'literalist': 0.9,
+                'mystical': 0.7,
+                'historical-critical': 0.85
+            };
+
+            return {
+                lens: lens,
+                score: alignmentScores[lens] || 0.5,
+                explanation: getHermeneuticalExplanation(lens)
+            };
+        }
+
+        function getHermeneuticalExplanation(lens) {
+            const explanations = {
+                'modernist': 'Text aligns with rational interpretation and universal values',
+                'feminist': 'Analysis considers gender-inclusive interpretive possibilities',
+                'literalist': 'Strong adherence to traditional textual understanding',
+                'mystical': 'Text supports spiritual and esoteric interpretation',
+                'historical-critical': 'Historical context and linguistic development considered'
+            };
+            
+            return explanations[lens] || 'Standard scholarly analysis applied';
+        }
+
+        function calculateConfidenceScores(words) {
+            return {
+                overall: 0.85,
+                manuscript_evidence: 0.90,
+                linguistic_coherence: 0.85,
+                cross_linguistic_support: 0.75,
+                historical_attestation: 0.95
+            };
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            
+            let html = `
+                <div class="result-card">
+                    <div class="card-header">
+                        <span class="card-icon">🔤</span>
+                        <span class="card-title">Rasm Analysis</span>
+                        <span class="confidence-score confidence-high">High Confidence</span>
+                    </div>
+                    <div class="card-content">
+                        ${results.rasmAnalysis.map(item => `
+                            <div class="variant-item">
+                                <div class="variant-text">${item.word}</div>
+                                <div class="variant-source">Undotted form: ${item.undottedForm}</div>
+                                ${item.potentialVariants.map(variant => `
+                                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fff3e0; border-radius: 4px;">
+                                        <div class="variant-text">${variant.text}</div>
+                                        <div class="variant-source">${variant.type}</div>
+                                        <div class="variant-meaning">${variant.meaning}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="card-header">
+                        <span class="card-icon">📖</span>
+                        <span class="card-title">Qira'at Variants</span>
+                        <span class="confidence-score confidence-high">Documented</span>
+                    </div>
+                    <div class="card-content">
+                        ${results.qiraatVariants.length > 0 ? results.qiraatVariants.map(variant => `
+                            <div class="variant-item">
+                                <div class="variant-text">${variant.text}</div>
+                                <div class="variant-source">Reading: ${variant.reading} (${variant.source})</div>
+                                ${variant.meaning ? `<div class="variant-meaning">${variant.meaning}</div>` : ''}
+                            </div>
+                        `).join('') : '<p>No documented variants for this text location.</p>'}
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="card-header">
+                        <span class="card-icon">🌍</span>
+                        <span class="card-title">Cross-Linguistic Etymology</span>
+                        <span class="confidence-score confidence-medium">Moderate</span>
+                    </div>
+                    <div class="card-content">
+                        ${results.etymologyAnalysis.map(item => `
+                            <div class="variant-item">
+                                <div class="variant-text">${item.word}</div>
+                                ${item.etymologies.map(etym => `
+                                    <div class="etymology-connection">
+                                        <span class="language-tag">${etym.language}</span>
+                                        <span>Root: ${etym.root} - ${etym.meaning}</span>
+                                        <span style="margin-left: auto; font-size: 0.8rem; color: #666;">
+                                            ${Math.round(etym.confidence * 100)}%
+                                        </span>
+                                    </div>
+                                    ${etym.note ? `<div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">${etym.note}</div>` : ''}
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="card-header">
+                        <span class="card-icon">🎯</span>
+                        <span class="card-title">Hermeneutical Analysis</span>
+                        <span class="confidence-score ${results.hermeneuticalAlignment.score > 0.8 ? 'confidence-high' : results.hermeneuticalAlignment.score > 0.6 ? 'confidence-medium' : 'confidence-low'}">
+                            ${Math.round(results.hermeneuticalAlignment.score * 100)}%
+                        </span>
+                    </div>
+                    <div class="card-content">
+                        <div class="variant-item">
+                            <div class="variant-source">Approach: ${results.hermeneuticalAlignment.lens}</div>
+                            <div class="variant-meaning">${results.hermeneuticalAlignment.explanation}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="card-header">
+                        <span class="card-icon">📊</span>
+                        <span class="card-title">Confidence Metrics</span>
+                        <span class="confidence-score confidence-high">${Math.round(results.confidenceScores.overall * 100)}%</span>
+                    </div>
+                    <div class="card-content">
+                        ${Object.entries(results.confidenceScores).map(([metric, score]) => `
+                            <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                                <span style="text-transform: capitalize;">${metric.replace('_', ' ')}</span>
+                                <span style="font-weight: 600; color: ${score > 0.8 ? '#2e7d32' : score > 0.6 ? '#f57c00' : '#d32f2f'};">
+                                    ${Math.round(score * 100)}%
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            resultsContainer.innerHTML = html;
+        }
+
+        // Load example on page load
+        window.addEventListener('load', function() {
+            // Set up example with al-Fatiha verse
+            setTimeout(() => {
+                document.getElementById('arabicText').value = 'مَالِكِ يَوْمِ الدِّينِ';
+                document.getElementById('surahNumber').value = '1';
+                document.getElementById('verseNumber').value = '4';
+                analyzeText();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
